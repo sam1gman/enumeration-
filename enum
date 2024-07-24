@@ -1,0 +1,39 @@
+#!/bin/bash
+
+read -p "Enter the Domain name: " url
+
+if [ ! -d "$url" ]; then
+        mkdir $url
+fi
+
+if [ ! -d "$url/recon" ]; then
+        mkdir -p $url/recon
+fi
+
+echo "Enumeration is in progress using Subfinder"
+docker run projectdiscovery/subfinder:latest -d $url >> $url/recon/SubFinder>
+cat $url/recon/SubFinder.txt >> $url/recon/final.txt
+echo "Finished Enumeration with SubFinder"
+
+echo "Enumeration is in progress using Amass"
+amass enum -d $url >> $url/recon/Amass.txt
+cat $url/recon/Amass.txt >> $url/recon/final.txt 
+echo "Finished Enumeration with Amass"
+
+echo "Enumeration is in progress using AssetFinder"
+assetfinder --subs-only  $url >> $url/recon/AssetFinder.txt
+cat $url/recon/AssetFinder.txt >> $url/recon/final.txt 
+echo "Finished Enumeration with AssetFinder"
+
+echo "================================================="
+
+sort $url/recon/final.txt | uniq >> $url/recon/finalv2.txt 
+echo "Finished sorting"
+
+echo "Checking HTTP/HTTPS response from domains"
+cat $url/recon/finalv2.txt | httprobe --prefer-https | cut -d'/' -f3 >> $url>
+echo "Finished Checking HTTP/HTTPS response from domains"
+
+echo "Taking snapshots"
+gowitness file -f $url/recon/finalv3.txt >> -P $url/recon/screenshots.txt
+echo "Finished taking snapshots"
